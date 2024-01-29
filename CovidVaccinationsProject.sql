@@ -44,17 +44,29 @@ Group by continent, Population
 order by DeathCount desc
 
 
--- GLOBAL 
+-- GLOBAL Numbers
 Select DISTINCT continent
 From PortfolioProject..CovidDeaths
 Where continent is not null
 
 
 
--- USE CTE
+-- USE CTE to perform calculation 
 With PopvsVac (Continent, Location, Date, Population, New_Vaccinations, RollingPeopleVaccinated)
 as
 (
+Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+, SUM(CONVERT(bigint,vac.new_vaccinations)) OVER (Partition by dea.Location Order by dea.location, dea.Date) as RollingPeopleVaccinated
+--, (RollingPeopleVaccinated/population) *100
+From PortfolioProject..CovidDeaths dea
+Join PortfolioProject..CovidVaccinations vac
+	On dea.location = vac.location
+	and dea.date = vac.date
+Where dea.continent is not null
+--order by 1,2,3
+)
+Select *, (RollingPeopleVaccinated/Population)*100
+From PopvsVac
 
 
 -- Using Temp Table to perform Calculation on Partition By in previous query
@@ -84,7 +96,7 @@ Where dea.continent is not null
 Select *, (RollingPeopleVaccinated/population) *100
 From #PercentPopulationVaccinated
 
---Creating a view
+--Creating a view to store data
 Create view PercentPopulationVaccinated as
 Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
 , SUM(CONVERT(bigint,vac.new_vaccinations)) OVER (Partition by dea.Location Order by dea.location, dea.Date) as RollingPeopleVaccinated
